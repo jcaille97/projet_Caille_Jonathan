@@ -37,7 +37,12 @@ public class ClientController {
 
     @DeleteMapping("{id}")
     public ResponseEntity<Void> deleteClient(@PathVariable Long id) {
-        clientService.supprimerClient(id);
+        boolean deleted = clientService.supprimerClient(id);
+
+        if (!deleted) {
+            return ResponseEntity.notFound().build(); // 404 si client inexistant
+        }
+
         return ResponseEntity.noContent().build();
     }
 }

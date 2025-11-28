@@ -30,7 +30,8 @@ public class ConseillerController {
 
     @GetMapping("{id}/clients")
     public ResponseEntity<List<ClientDto>> getClients(@PathVariable Long id) {
-        List<ClientDto> clients = conseillerService.recupererClients(id);
-        return ResponseEntity.ok(clients);
+        return conseillerService.recupererClients(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

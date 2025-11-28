@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -44,13 +45,14 @@ public class ConseillerServiceImpl implements ConseillerService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ClientDto> recupererClients(Long idConseiller) {
+    public Optional<List<ClientDto>> recupererClients(Long idConseiller) {
         if (conseillerRepository.findById(idConseiller).isEmpty()) {
             throw new IllegalArgumentException("Le conseiller n'existe pas");
         }
-        return clientRepository.findByConseillerId(idConseiller)
+        List<ClientDto> clients = clientRepository.findByConseillerId(idConseiller)
                 .stream()
                 .map(clientMapper::toDto)
                 .toList();
+        return Optional.of(clients);
     }
 }

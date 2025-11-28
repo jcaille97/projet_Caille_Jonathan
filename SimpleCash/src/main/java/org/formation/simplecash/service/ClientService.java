@@ -9,7 +9,7 @@ import java.util.Optional;
 public interface ClientService {
     ClientDto creerClient(ClientCreateDto dto);
 
-    void supprimerClient(Long idClient);
+    boolean supprimerClient(Long idClient);
 
     Optional<ClientDto> modifierClient(Long idClient, ClientUpdateDto dto);
 

@@ -49,19 +49,21 @@ public class ClientServiceImpl implements ClientService {
     }
 
     @Override
-    public void supprimerClient(Long idClient) {
-        Client client = clientRepository.findById(idClient)
-                .orElseThrow(() -> new IllegalArgumentException("Client introuvable"));
+    public boolean supprimerClient(Long idClient) {
+        return clientRepository.findById(idClient)
+                .map(client -> {
+                    BigDecimal soldeCourant = client.getCompteCourant().getSolde();
+                    BigDecimal soldeEpargne = client.getCompteEpargne().getSolde();
 
-        BigDecimal soldeCourant = client.getCompteCourant().getSolde();
-        BigDecimal soldeEpargne = client.getCompteEpargne().getSolde();
+                    if (soldeCourant.compareTo(BigDecimal.ZERO) != 0
+                            || soldeEpargne.compareTo(BigDecimal.ZERO) != 0) {
+                        throw new IllegalStateException("Impossible de supprimer le client; comptes non soldés.");
+                    }
 
-        if (soldeCourant.compareTo(java.math.BigDecimal.ZERO) != 0
-                || soldeEpargne.compareTo(java.math.BigDecimal.ZERO) != 0) {
-            throw new IllegalStateException("Impossible de supprimer le client; comptes non soldés.");
-        }
-
-        clientRepository.delete(client);
+                    clientRepository.delete(client);
+                    return true;
+                })
+                .orElse(false);
     }
 
     @Override
