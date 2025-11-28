@@ -1,0 +1,508 @@
+openapi: 3.0.1
+info:
+  title: SimpleCash API
+  version: 1.0.0
+  description: API de gestion des conseillers, clients et comptes bancaires (courant / épargne).
+
+servers:
+  - url: http://localhost:8080
+
+paths:
+  /api/conseillers:
+    post:
+      summary: Créer un conseiller
+      operationId: createConseiller
+      tags: [Conseillers]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConseillerCreateDto'
+      responses:
+        '200':
+          description: Conseiller créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConseillerDto'
+        '400':
+          description: Erreur de validation ou règle métier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/conseillers/{id}:
+    delete:
+      summary: Supprimer un conseiller
+      description: Le conseiller ne peut être supprimé que s'il n'a plus de clients.
+      operationId: deleteConseiller
+      tags: [Conseillers]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identifiant du conseiller
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Conseiller supprimé
+        '400':
+          description: Conseiller inexistant ou avec des clients associés
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/conseillers/{id}/clients:
+    get:
+      summary: Lister les clients d'un conseiller
+      operationId: getClientsByConseiller
+      tags: [Conseillers, Clients]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identifiant du conseiller
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Liste des clients du conseiller
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClientDto'
+        '400':
+          description: Conseiller inexistant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/clients:
+    post:
+      summary: Créer un client et ses comptes
+      operationId: createClient
+      tags: [Clients]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientCreateDto'
+      responses:
+        '200':
+          description: Client créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientDto'
+        '400':
+          description: Erreur de validation, conseiller introuvable ou limite de 10 clients atteinte
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/clients/{id}:
+    get:
+      summary: Récupérer un client
+      operationId: getClient
+      tags: [Clients]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identifiant du client
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Client trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientDto'
+        '404':
+          description: Client introuvable
+    patch:
+      summary: Mettre à jour partiellement un client
+      operationId: updateClient
+      tags: [Clients]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identifiant du client
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientUpdateDto'
+      responses:
+        '200':
+          description: Client mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientDto'
+        '404':
+          description: Client introuvable
+    delete:
+      summary: Supprimer un client
+      description: Le client ne peut être supprimé que si ses deux comptes ont un solde nul.
+      operationId: deleteClient
+      tags: [Clients]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identifiant du client
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Client supprimé
+        '404':
+          description: Client introuvable
+        '400':
+          description: Comptes non soldés
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/comptes/courant/{id}/solde:
+    get:
+      summary: Récupérer le solde d'un compte courant
+      operationId: getSoldeCompteCourant
+      tags: [Comptes]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identifiant du compte courant
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Solde du compte courant
+          content:
+            application/json:
+              schema:
+                type: number
+                format: double
+        '400':
+          description: Compte courant introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/comptes/epargne/{id}/solde:
+    get:
+      summary: Récupérer le solde d'un compte épargne
+      operationId: getSoldeCompteEpargne
+      tags: [Comptes]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identifiant du compte épargne
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Solde du compte épargne
+          content:
+            application/json:
+              schema:
+                type: number
+                format: double
+        '400':
+          description: Compte épargne introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/comptes/courant/{id}/credit:
+    post:
+      summary: Créditer un compte courant
+      operationId: creditCompteCourant
+      tags: [Comptes]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identifiant du compte courant
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OperationMontantDto'
+      responses:
+        '204':
+          description: Compte crédité
+        '400':
+          description: Montant invalide ou compte introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/comptes/courant/{id}/debit:
+    post:
+      summary: Débiter un compte courant (découvert max -1000)
+      operationId: debitCompteCourant
+      tags: [Comptes]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identifiant du compte courant
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OperationMontantDto'
+      responses:
+        '204':
+          description: Compte débité
+        '400':
+          description: Montant invalide, découvert dépassé ou compte introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/comptes/epargne/{id}/credit:
+    post:
+      summary: Créditer un compte épargne
+      operationId: creditCompteEpargne
+      tags: [Comptes]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identifiant du compte épargne
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OperationMontantDto'
+      responses:
+        '204':
+          description: Compte épargne crédité
+        '400':
+          description: Montant invalide ou compte introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/comptes/epargne/{id}/debit:
+    post:
+      summary: Débiter un compte épargne (pas de découvert)
+      operationId: debitCompteEpargne
+      tags: [Comptes]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identifiant du compte épargne
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OperationMontantDto'
+      responses:
+        '204':
+          description: Compte épargne débité
+        '400':
+          description: Montant invalide, solde insuffisant ou compte introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/comptes/courant/virement:
+    post:
+      summary: Virement entre deux comptes courants
+      operationId: virementCourantVersCourant
+      tags: [Comptes]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VirementDto'
+      responses:
+        '204':
+          description: Virement effectué
+        '400':
+          description: Comptes identiques, montant invalide, découvert dépassé ou compte introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ConseillerDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        nom:
+          type: string
+
+    ConseillerCreateDto:
+      type: object
+      required: [nom]
+      properties:
+        nom:
+          type: string
+
+    ClientDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        conseillerId:
+          type: integer
+          format: int64
+        nom:
+          type: string
+        prenom:
+          type: string
+        adresse:
+          type: string
+        codePostal:
+          type: string
+        ville:
+          type: string
+        telephone:
+          type: string
+        numeroCompteCourant:
+          type: string
+        soldeCompteCourant:
+          type: number
+          format: double
+        numeroCompteEpargne:
+          type: string
+        soldeCompteEpargne:
+          type: number
+          format: double
+
+    ClientCreateDto:
+      type: object
+      required:
+        - conseillerId
+        - nom
+        - prenom
+        - adresse
+        - codePostal
+        - ville
+        - telephone
+      properties:
+        conseillerId:
+          type: integer
+          format: int64
+        nom:
+          type: string
+        prenom:
+          type: string
+        adresse:
+          type: string
+        codePostal:
+          type: string
+        ville:
+          type: string
+        telephone:
+          type: string
+        soldeCompteCourant:
+          type: number
+          format: double
+        soldeCompteEpargne:
+          type: number
+          format: double
+
+    ClientUpdateDto:
+      type: object
+      properties:
+        nom:
+          type: string
+        prenom:
+          type: string
+        adresse:
+          type: string
+        codePostal:
+          type: string
+        ville:
+          type: string
+        telephone:
+          type: string
+
+    OperationMontantDto:
+      type: object
+      required: [montant]
+      properties:
+        montant:
+          type: number
+          format: double
+          minimum: 0.01
+
+    VirementDto:
+      type: object
+      required: [idSource, idDestination, montant]
+      properties:
+        idSource:
+          type: integer
+          format: int64
+        idDestination:
+          type: integer
+          format: int64
+        montant:
+          type: number
+          format: double
+          minimum: 0.01
+
+    ErrorResponse:
+      type: object
+      additionalProperties:
+        type: string
+
